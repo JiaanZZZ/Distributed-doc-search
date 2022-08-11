@@ -23,11 +23,25 @@ public class SequentialSearch {
         findMostRelevantDocuments(documents,terms);
     }
     private static void findMostRelevantDocuments(List<String> documents, List<String> terms) throws FileNotFoundException {
-        Map<String, DocumentData> documentDataMap = new HashMap<>();
+        Map<String, DocumentData> documentsResults = new HashMap<>();
         for(String document:documents){
             BufferedReader bufferedReader = new BufferedReader(new FileReader(document));
             List<String> lines = bufferedReader.lines().collect(Collectors.toList());
             List<String> words = TFIDF.getWordsFromLines(lines);
+            DocumentData documentData = TFIDF.createDocumentData(words,terms);
+            documentsResults.put(document,documentData);
+        }
+
+        Map<Double, List<String>> documentsByScore = TFIDF.getDocumentsSortedByScore(terms, documentsResults);
+        printResults(documentsByScore);
+
+    }
+    private static void printResults(Map<Double,List<String>> documentsByScore){
+        for(Map.Entry<Double,List<String>> docScorePair: documentsByScore.entrySet()){
+            double score = docScorePair.getKey();
+            for(String document:docScorePair.getValue()){
+                System.out.println(String.format("Book : %s - score : %f",document.split("/")[3],score));
+            }
         }
     }
 }
