@@ -1,26 +1,3 @@
-/*
- *  MIT License
- *
- *  Copyright (c) 2019 Michael Pogrebinsky - Distributed Systems & Cloud Computing with Java
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
- */
 
 package cluster.management;
 
@@ -30,6 +7,7 @@ import org.apache.zookeeper.data.Stat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 public class ServiceRegistry implements Watcher {
     public static final String WORKERS_REGISTRY_ZNODE = "/workers_service_registry";
@@ -38,18 +16,16 @@ public class ServiceRegistry implements Watcher {
     private List<String> allServiceAddresses = null;
     private String currentZnode = null;
     private final String serviceRegistryZnode;
+    private final Random random;
 
     public ServiceRegistry(ZooKeeper zooKeeper, String serviceRegistryZnode) {
         this.zooKeeper = zooKeeper;
         this.serviceRegistryZnode = serviceRegistryZnode;
+        this.random = new Random();
         createServiceRegistryNode();
     }
 
     public void registerToCluster(String metadata) throws KeeperException, InterruptedException {
-        if (currentZnode != null) {
-            System.out.println("Already registered to service registry");
-            return;
-        }
         this.currentZnode = zooKeeper.create(serviceRegistryZnode + "/n_", metadata.getBytes(),
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
         System.out.println("Registered to service registry");
@@ -92,6 +68,18 @@ public class ServiceRegistry implements Watcher {
             updateAddresses();
         }
         return allServiceAddresses;
+    }
+
+    public synchronized String getRandomServiceAddress() throws KeeperException, InterruptedException {
+        if (allServiceAddresses == null) {
+            updateAddresses();
+        }
+        if (!allServiceAddresses.isEmpty()) {
+            int randomIndex = random.nextInt(allServiceAddresses.size());
+            return allServiceAddresses.get(randomIndex);
+        } else {
+            return null;
+        }
     }
 
     private synchronized void updateAddresses() throws KeeperException, InterruptedException {

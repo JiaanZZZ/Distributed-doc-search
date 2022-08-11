@@ -27,7 +27,7 @@ public class SequentialSearch {
         for(String document:documents){
             BufferedReader bufferedReader = new BufferedReader(new FileReader(document));
             List<String> lines = bufferedReader.lines().collect(Collectors.toList());
-            List<String> words = TFIDF.getWordsFromLines(lines);
+            List<String> words = TFIDF.getWordsFromDocument(lines);
             DocumentData documentData = TFIDF.createDocumentData(words,terms);
             documentsResults.put(document,documentData);
         }
